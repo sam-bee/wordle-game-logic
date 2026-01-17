@@ -76,8 +76,9 @@ func TestWord_Validate(t *testing.T) {
 		{"valid word in list (middle)", mustNewWord("crane"), nil},
 		{"valid word in list (last)", mustNewWord("eager"), nil},
 		{"valid word not in list", mustNewWord("zebra"), ErrNotInWordlist},
-		{"invalid character", Word{'H', 'e', 'l', 'l', 'o'}, ErrInvalidCharacter},
+		{"invalid uppercase", Word{'H', 'e', 'l', 'l', 'o'}, ErrInvalidCharacter},
 		{"invalid null byte", Word{0, 'e', 'l', 'l', 'o'}, ErrInvalidCharacter},
+		{"invalid number", Word{'h', 'e', 'l', 'l', '0'}, ErrInvalidCharacter},
 	}
 
 	for _, tt := range tests {
