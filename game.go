@@ -36,11 +36,26 @@ func (g *Game) PlayGuess(guess Word) {
 func (g *Game) updatePossibleSolutions() {
 	var remaining []Word
 	for _, candidate := range g.PossibleSolutions {
-		if matchesAllFeedback(g, candidate) {
+		if g.matchesFeedback(candidate) {
 			remaining = append(remaining, candidate)
 		}
 	}
 	g.PossibleSolutions = remaining
+}
+
+func (g *Game) matchesFeedback(candidate Word) bool {
+	candidateSolution := Solution(candidate)
+
+	for i, guess := range g.Guesses {
+		expectedFeedback := g.Feedbacks[i]
+		actualFeedback := candidateSolution.CheckGuess(guess)
+
+		if actualFeedback != expectedFeedback {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (g *Game) LastFeedback() *Feedback {
