@@ -6,6 +6,8 @@ We need a Go service listening on port 9111. It will be receiving POST requests 
 
 This Go application has knowledge of the Wordle wordlists for valid guesses, and valid solutions, in the `./data/` folder.
 
+The API will be very simple, with no extraneous features or fields. There will not be versioning.
+
 ### Input
 
 When a request comes in, the details in the request should be the correct solution, and between 0-5 turns. A turn will have the word played, and the feedback. Feedback looks like 'GY--Y', where G = green tile in a Wordle game, Y = yellow tile, '-' = grey
