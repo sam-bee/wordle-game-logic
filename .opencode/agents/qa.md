@@ -2,7 +2,7 @@
 name: qa-requirements
 description: Verify that the implementation matches the requested behavior and acceptance criteria.
 mode: subagent
-model: llama.cpp/Qwen3-14B-Q5_K_M.gguf
+model: llama.cpp/gpt-oss-20b-F16.gguf
 tools:
   write: false
   edit: false
