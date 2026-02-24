@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/sam-bee/wordle-game-engine/pkg/wordlegameengine"
+	"log"
 	"net/http"
-	"strings"
 )
 
 // Request struct for /api/evaluate endpoint
@@ -43,21 +45,39 @@ func evaluateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Basic validation
-	if len(req.Solution) != 5 || req.Solution != strings.ToLower(req.Solution) {
-		http.Error(w, "Invalid solution format", http.StatusBadRequest)
+	// Validate solution
+	sol, err := wordlegameengine.NewSolution(req.Solution)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := sol.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if req.ProposedGuess != "" && (len(req.ProposedGuess) != 5 || req.ProposedGuess != strings.ToLower(req.ProposedGuess)) {
-		http.Error(w, "Invalid guess format", http.StatusBadRequest)
-		return
+	// Validate proposed guess
+	if req.ProposedGuess != "" {
+		guess, err := wordlegameengine.NewWord(req.ProposedGuess)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := guess.Validate(); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
-	// Validate all turns
+	// Validate past turns
 	for _, turn := range req.Turns {
-		if len(turn.Guess) != 5 || turn.Guess != strings.ToLower(turn.Guess) {
-			http.Error(w, "Invalid guess format in turns", http.StatusBadRequest)
+		tguess, err := wordlegameengine.NewWord(turn.Guess)
+		if err != nil {
+			http.Error(w, fmt.Errorf("invalid past guess %q: %w", turn.Guess, err).Error(), http.StatusBadRequest)
+			return
+		}
+		if err := tguess.Validate(); err != nil {
+			http.Error(w, fmt.Errorf("invalid past guess %q: %w", turn.Guess, err).Error(), http.StatusBadRequest)
 			return
 		}
 		if len(turn.Feedback) != 5 {
@@ -87,6 +107,9 @@ func evaluateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	if err := wordlegameengine.LoadWordlists("./data"); err != nil {
+		log.Fatal(err)
+	}
 	http.HandleFunc("/api/evaluate", evaluateHandler)
 	http.ListenAndServe(":9111", nil)
 }

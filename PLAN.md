@@ -26,8 +26,42 @@ There will be a large, in-memory cache. It will be used for identifying the solu
 
 ## Progress so far
 
-A Go wordle engine has been implemented. A lightweight HTTP server has been added, listening on port 9111 with /api/evaluate POST endpoint accepting JSON ({"solution": "...", "turns": [...], "proposed_guess": "..."}) and returning dummy JSON matching spec: {"game_status": "...", "turn_valid": bool, "shortlist_reduction": {"before": int, "after": int, "ratio": float}, "feedback": "..."}. Basic validation included. Tests pass. No caching yet.
+A Go wordle engine has been implemented in pkg/wordlegameengine. A lightweight HTTP server has been added in main.go, listening on port 9111 with /api/evaluate POST endpoint accepting JSON ({&quot;solution&quot;: &quot;...&quot;, &quot;turns&quot;: [...], &quot;proposed_guess&quot;: &quot;...&quot;}) and returning dummy JSON matching spec: {&quot;game_status&quot;: &quot;...&quot;, &quot;turn_valid&quot;: bool, &quot;shortlist_reduction&quot;: {&quot;before&quot;: int, &quot;after&quot;: int, &quot;ratio&quot;: float}, &quot;feedback&quot;: &quot;...&quot;}. Dummy validation (length/lowercase). Tests pass. No caching yet.
 
-## Next Steps
+## Current Iteration: Integrate Engine for Request Validation
 
-TODO
+### Acceptance Criteria
+
+1. On startup, main.go calls wordlegameengine.LoadWordlists('./data'); log.Fatal if error.
+
+2. Import &quot;./pkg/wordlegameengine&quot; and &quot;log&quot;.
+
+3. In evaluateHandler:
+   - Validate req.Solution: w, err := wordlegameengine.NewSolution(req.Solution); if err != nil { http.Error(err.Error(), 400) }; w.Validate() same.
+   - If req.ProposedGuess != &quot;&quot;: same for NewWord(req.ProposedGuess).Validate()
+   - For each turn in req.Turns: NewWord(turn.Guess).Validate()
+   - Retain existing checks: solution/proposed/guess len==5 lowercase (but now superseded by New* ), feedback len==5.
+   - If all valid, set TurnValid = true in response, return dummy as before.
+
+4. Update tests to cover real word/non-word validation cases.
+
+5. `go test ./...` passes.
+
+6. Server responds 400 with descriptive error for invalid words.
+
+### Tasks
+
+- [ ] **go-coder**: Implement the validation integration as per AC above. Run tests.
+
+- [ ] **qa-requirements**: Verify AC met, tests pass, validation uses engine correctly, dummy logic unchanged.
+
+## Future Iterations
+
+- Compute real game_status (won/lost/ongoing based on turns len and last feedback).
+
+- Compute real feedback for proposed_guess against solution.
+
+- Compute real shortlist reduction using Game logic.
+
+- Implement caching for first turn.
+
