@@ -2,7 +2,7 @@
 
 ## Project Structure
 
-The desired structure is that there should be a `./pkg/` directory, with a package called `wordlegameengine`. There should be a `main.go` file in the project root. Other packages or folders may be added as necessary.
+The desired structure is that there should be a `./pkg/` directory, with a package called `wordlegameengine`. There should be a `main.go` file in the project root. Other packages or folders may be added as necessary, but it is likely we will only need one package. Business logic does not go in `main.go` - business logic goes in the `wordlegameengine` package.
 
 ## Language version
 
