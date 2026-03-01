@@ -69,3 +69,20 @@ func (s *Solution) CheckGuess(guess Word) Feedback {
 
 	return feedback
 }
+
+func (f Feedback) String() string {
+	// Convert each TileColor to its character representation:
+	// Green -> 'G', Yellow -> 'Y', Grey -> '-'
+	result := make([]byte, WordLength)
+	for i, color := range f {
+		switch color {
+		case Green:
+			result[i] = 'G'
+		case Yellow:
+			result[i] = 'Y'
+		default:
+			result[i] = '-'
+		}
+	}
+	return string(result)
+}

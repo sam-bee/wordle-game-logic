@@ -86,8 +86,15 @@ func evaluateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Dummy response
-	dummyResp := Response{
+	// Calculate real feedback if proposed_guess is provided
+	feedbackStr := ""
+	if req.ProposedGuess != "" {
+		guess, _ := wordlegameengine.NewWord(req.ProposedGuess)
+		feedback := sol.CheckGuess(guess)
+		feedbackStr = feedback.String()
+	}
+
+	resp := Response{
 		GameStatus: "ongoing",
 		TurnValid:  true,
 		ShortlistReduction: struct {
@@ -99,11 +106,11 @@ func evaluateHandler(w http.ResponseWriter, r *http.Request) {
 			After:  100,
 			Ratio:  0.9567,
 		},
-		Feedback: "G--YY",
+		Feedback: feedbackStr,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(dummyResp)
+	json.NewEncoder(w).Encode(resp)
 }
 
 func main() {

@@ -30,4 +30,12 @@ A Go wordle engine has been implemented in pkg/wordlegameengine. A lightweight H
 
 ## Completed Iterations
 
-[TODO - fill this section of the document out in as we go]
+### 2026-03-01: Real Feedback Implementation
+- Added `Feedback.String()` method to `pkg/wordlegameengine/solution.go` to convert Feedback to "G--YY" format
+- Modified `main.go` to calculate real feedback for `proposed_guess` against `solution` instead of returning hard-coded value
+- The `/api/evaluate` endpoint now returns accurate feedback (e.g., "G-Y--", "GGGGG", "-----")
+
+## Next Steps / TODO
+- Implement real shortlist reduction calculation (currently hard-coded)
+- Implement game status determination (won/lost/ongoing) - currently hard-coded as "ongoing"
+- Add caching for first-turn solution shortlists
