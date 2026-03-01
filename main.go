@@ -69,29 +69,44 @@ func evaluateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Validate past turns
+	// Create game and replay past turns
+	game := wordlegameengine.NewGame(sol)
 	for _, turn := range req.Turns {
-		tguess, err := wordlegameengine.NewWord(turn.Guess)
+		guess, err := wordlegameengine.NewWord(turn.Guess)
 		if err != nil {
 			http.Error(w, fmt.Errorf("invalid past guess %q: %w", turn.Guess, err).Error(), http.StatusBadRequest)
 			return
 		}
-		if err := tguess.Validate(); err != nil {
+		if err := guess.Validate(); err != nil {
 			http.Error(w, fmt.Errorf("invalid past guess %q: %w", turn.Guess, err).Error(), http.StatusBadRequest)
 			return
 		}
-		if len(turn.Feedback) != 5 {
-			http.Error(w, "Invalid feedback format", http.StatusBadRequest)
+		feedback, err := wordlegameengine.ParseFeedback(turn.Feedback)
+		if err != nil {
+			http.Error(w, fmt.Errorf("invalid feedback %q: %w", turn.Feedback, err).Error(), http.StatusBadRequest)
 			return
 		}
+		game.ReplayTurn(guess, feedback)
 	}
 
-	// Calculate real feedback if proposed_guess is provided
+	// Get shortlist length BEFORE playing proposed guess
+	before := game.ShortlistLength()
+
+	// Calculate real feedback and shortlist reduction if proposed_guess is provided
 	feedbackStr := ""
+	after := before // If no proposed guess, after = before (no reduction)
 	if req.ProposedGuess != "" {
 		guess, _ := wordlegameengine.NewWord(req.ProposedGuess)
 		feedback := sol.CheckGuess(guess)
 		feedbackStr = feedback.String()
+		game.PlayGuess(guess)
+		after = game.ShortlistLength()
+	}
+
+	// Calculate ratio (handle division by zero)
+	ratio := 0.0
+	if before > 0 {
+		ratio = 1.0 - (float64(after) / float64(before))
 	}
 
 	resp := Response{
@@ -102,9 +117,9 @@ func evaluateHandler(w http.ResponseWriter, r *http.Request) {
 			After  int     `json:"after"`
 			Ratio  float64 `json:"ratio"`
 		}{
-			Before: 2309,
-			After:  100,
-			Ratio:  0.9567,
+			Before: before,
+			After:  after,
+			Ratio:  ratio,
 		},
 		Feedback: feedbackStr,
 	}

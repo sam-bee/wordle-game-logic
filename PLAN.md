@@ -35,7 +35,17 @@ A Go wordle engine has been implemented in pkg/wordlegameengine. A lightweight H
 - Modified `main.go` to calculate real feedback for `proposed_guess` against `solution` instead of returning hard-coded value
 - The `/api/evaluate` endpoint now returns accurate feedback (e.g., "G-Y--", "GGGGG", "-----")
 
+### 2026-03-01: Real Shortlist Reduction Implementation
+- Added `ShortlistLength()` method to `Game` to get current shortlist count
+- Added `ReplayTurn()` method to `Game` to replay past turns with historical feedback
+- Added `ParseFeedback()` function to parse feedback strings ("-G-Y-") into Feedback objects
+- Modified `main.go` to:
+  - Create game and replay all past turns from request
+  - Measure shortlist BEFORE playing proposed guess
+  - Play proposed guess and measure shortlist AFTER
+  - Calculate real reduction ratio: 1 - (after/before)
+- Added comprehensive tests for all new functionality
+
 ## Next Steps / TODO
-- Implement real shortlist reduction calculation (currently hard-coded)
 - Implement game status determination (won/lost/ongoing) - currently hard-coded as "ongoing"
 - Add caching for first-turn solution shortlists

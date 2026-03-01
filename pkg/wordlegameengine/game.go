@@ -104,6 +104,16 @@ func (g *Game) matchesFeedback(candidate Word) bool {
 	return true
 }
 
+func (g *Game) ShortlistLength() int {
+	return len(g.SolutionShortlist)
+}
+
+func (g *Game) ReplayTurn(guess Word, feedback Feedback) {
+	g.Guesses = append(g.Guesses, guess)
+	g.Feedbacks = append(g.Feedbacks, feedback)
+	g.updateSolutionShortlist()
+}
+
 func (g *Game) LastFeedback() *Feedback {
 	if len(g.Feedbacks) == 0 {
 		return nil

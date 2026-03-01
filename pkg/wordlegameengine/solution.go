@@ -86,3 +86,23 @@ func (f Feedback) String() string {
 	}
 	return string(result)
 }
+
+func ParseFeedback(s string) (Feedback, error) {
+	var f Feedback
+	if len(s) != WordLength {
+		return f, fmt.Errorf("feedback must be %d characters", WordLength)
+	}
+	for i, c := range s {
+		switch c {
+		case 'G', 'g':
+			f[i] = Green
+		case 'Y', 'y':
+			f[i] = Yellow
+		case '-', 'X', 'x', 'B', 'b':
+			f[i] = Grey
+		default:
+			return f, fmt.Errorf("invalid feedback character: %q", c)
+		}
+	}
+	return f, nil
+}

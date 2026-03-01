@@ -50,6 +50,89 @@ func TestSolution_CheckGuess(t *testing.T) {
 	}
 }
 
+func TestParseFeedback(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    Feedback
+		wantErr bool
+	}{
+		{
+			name:    "valid input -G---",
+			input:   "-G---",
+			want:    Feedback{Grey, Green, Grey, Grey, Grey},
+			wantErr: false,
+		},
+		{
+			name:    "valid input GGGGG",
+			input:   "GGGGG",
+			want:    Feedback{Green, Green, Green, Green, Green},
+			wantErr: false,
+		},
+		{
+			name:    "valid input -----",
+			input:   "-----",
+			want:    Feedback{Grey, Grey, Grey, Grey, Grey},
+			wantErr: false,
+		},
+		{
+			name:    "valid input GYGYG",
+			input:   "GYGYG",
+			want:    Feedback{Green, Yellow, Green, Yellow, Green},
+			wantErr: false,
+		},
+		{
+			name:    "valid input with lowercase",
+			input:   "gy-gy",
+			want:    Feedback{Green, Yellow, Grey, Green, Yellow},
+			wantErr: false,
+		},
+		{
+			name:    "valid input with X for grey",
+			input:   "XyGx-",
+			want:    Feedback{Grey, Yellow, Green, Grey, Grey},
+			wantErr: false,
+		},
+		{
+			name:    "invalid length - too short",
+			input:   "--",
+			want:    Feedback{},
+			wantErr: true,
+		},
+		{
+			name:    "invalid length - too long",
+			input:   "-------",
+			want:    Feedback{},
+			wantErr: true,
+		},
+		{
+			name:    "invalid character",
+			input:   "-G-!-",
+			want:    Feedback{},
+			wantErr: true,
+		},
+		{
+			name:    "empty string",
+			input:   "",
+			want:    Feedback{},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseFeedback(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseFeedback(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("ParseFeedback(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func feedbackString(f Feedback) string {
 	colors := []rune{'⬜', '🟨', '🟩'}
 	result := make([]rune, WordLength)

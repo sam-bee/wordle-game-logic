@@ -1,8 +1,18 @@
 package wordlegameengine
 
 import (
+	"fmt"
+	"os"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	if err := LoadWordlists("../../data"); err != nil {
+		fmt.Printf("Failed to load wordlists: %v\n", err)
+		os.Exit(1)
+	}
+	os.Exit(m.Run())
+}
 
 func TestNewGame(t *testing.T) {
 	solution := mustNewSolution("crane")
@@ -194,6 +204,89 @@ func TestGame_SolutionShortlist_Smoke(t *testing.T) {
 	}
 	if len(game.SolutionShortlist) > 0 && game.SolutionShortlist[0] != mustNewWord("spare") {
 		t.Errorf("SolutionShortlist[0] = %v, want 'spare'", game.SolutionShortlist[0])
+	}
+}
+
+func TestGame_ShortlistLength(t *testing.T) {
+	solution := mustNewSolution("crane")
+	game := NewGame(solution)
+
+	// Initial shortlist should have all allowed solutions
+	initialLength := game.ShortlistLength()
+	if initialLength == 0 {
+		t.Error("initial ShortlistLength() = 0, want > 0")
+	}
+
+	// After playing a guess, shortlist should decrease (or stay same)
+	game.PlayGuess(mustNewWord("slate"))
+	afterLength := game.ShortlistLength()
+	if afterLength > initialLength {
+		t.Errorf("ShortlistLength() after guess = %d, should be <= %d", afterLength, initialLength)
+	}
+
+	// Test with a guess that eliminates many words
+	game2 := NewGame(solution)
+	initialLength2 := game2.ShortlistLength()
+	game2.PlayGuess(mustNewWord("aaaaa"))
+	afterLength2 := game2.ShortlistLength()
+	if afterLength2 >= initialLength2 {
+		t.Errorf("ShortlistLength() after invalid guess = %d, should be < %d", afterLength2, initialLength2)
+	}
+}
+
+func TestGame_ReplayTurn(t *testing.T) {
+	solution := mustNewSolution("crane")
+	game := NewGame(solution)
+
+	// Replay a turn with known guess and feedback
+	guess := mustNewWord("slate")
+	feedback := Feedback{Grey, Grey, Green, Grey, Green}
+	game.ReplayTurn(guess, feedback)
+
+	// Verify guess and feedback were recorded
+	if len(game.Guesses) != 1 {
+		t.Errorf("after ReplayTurn, Guesses length = %d, want 1", len(game.Guesses))
+	}
+	if game.Guesses[0] != guess {
+		t.Errorf("after ReplayTurn, Guesses[0] = %v, want %v", game.Guesses[0], guess)
+	}
+	if len(game.Feedbacks) != 1 {
+		t.Errorf("after ReplayTurn, Feedbacks length = %d, want 1", len(game.Feedbacks))
+	}
+	if game.Feedbacks[0] != feedback {
+		t.Errorf("after ReplayTurn, Feedbacks[0] = %v, want %v", game.Feedbacks[0], feedback)
+	}
+
+	// Verify shortlist was updated
+	// For "slate" with feedback "--G-G" against "crane", only words with 'a' at pos 2 and 'e' at pos 4 should remain
+	shortlistLength := game.ShortlistLength()
+	if shortlistLength == len(AllowedSolutions) {
+		t.Error("Shortlist should have been updated after ReplayTurn")
+	}
+}
+
+func TestGame_ReplayTurn_Multiple(t *testing.T) {
+	solution := mustNewSolution("crane")
+	game := NewGame(solution)
+
+	// Replay multiple turns
+	turns := []struct {
+		guess    string
+		feedback Feedback
+	}{
+		{"slate", Feedback{Grey, Grey, Green, Grey, Green}},
+		{"crane", Feedback{Green, Green, Green, Green, Green}},
+	}
+
+	for _, turn := range turns {
+		game.ReplayTurn(mustNewWord(turn.guess), turn.feedback)
+	}
+
+	if len(game.Guesses) != 2 {
+		t.Errorf("after 2 ReplayTurn calls, Guesses length = %d, want 2", len(game.Guesses))
+	}
+	if len(game.Feedbacks) != 2 {
+		t.Errorf("after 2 ReplayTurn calls, Feedbacks length = %d, want 2", len(game.Feedbacks))
 	}
 }
 
