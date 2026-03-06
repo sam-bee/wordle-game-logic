@@ -24,6 +24,17 @@ func NewGame(solution Solution) *Game {
 	}
 }
 
+// NewGameWithShortlist creates a game with a pre-populated solution shortlist
+// Used when loading from cache
+func NewGameWithShortlist(solution Solution, shortlist []Word) *Game {
+	return &Game{
+		Solution:          solution,
+		Guesses:           make([]Word, 0, MaxGuesses),
+		Feedbacks:         make([]Feedback, 0, MaxGuesses),
+		SolutionShortlist: append([]Word{}, shortlist...), // Make a copy
+	}
+}
+
 func NewRandomGame() *Game {
 	idx := rand.IntN(len(AllowedSolutions))
 	solution := Solution(AllowedSolutions[idx])

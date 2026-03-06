@@ -46,6 +46,21 @@ A Go wordle engine has been implemented in pkg/wordlegameengine. A lightweight H
   - Calculate real reduction ratio: 1 - (after/before)
 - Added comprehensive tests for all new functionality
 
+### 2026-03-01: B-Tree Cache for First-Turn Shortlists
+- Added `github.com/google/btree` dependency for B-tree implementation
+- Created `pkg/wordlegameengine/shortlistcache.go` with:
+  - `CacheKey` type (format: "guess|feedback")
+  - `CacheEntry` implementing `btree.Item` interface
+  - Thread-safe `ShortlistCache` with `sync.RWMutex`
+  - `Get()` and `Put()` methods with defensive copying
+- Added `NewGameWithShortlist()` constructor to `Game` for cache hit scenarios
+- Modified `main.go` to:
+  - Initialize cache on startup with `InitCache()`
+  - Check cache for first-turn shortlists
+  - Use cached shortlist on cache hit (skips recalculating)
+  - Store shortlist in cache on first-turn miss
+- Cache stores shortlists by key `{firstGuess}|{feedback}` for O(log n) lookups
+- Memory usage bounded, well under 10GB limit
+
 ## Next Steps / TODO
 - Implement game status determination (won/lost/ongoing) - currently hard-coded as "ongoing"
-- Add caching for first-turn solution shortlists

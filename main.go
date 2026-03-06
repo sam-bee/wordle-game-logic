@@ -69,9 +69,50 @@ func evaluateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Create game and replay past turns
-	game := wordlegameengine.NewGame(sol)
-	for _, turn := range req.Turns {
+	// Check for first turn cache
+	var cacheKey wordlegameengine.CacheKey
+	haveFirstTurn := len(req.Turns) > 0
+	cached := false
+	var cachedShortlist []wordlegameengine.Word
+
+	if haveFirstTurn {
+		firstGuess, err := wordlegameengine.NewWord(req.Turns[0].Guess)
+		if err != nil {
+			http.Error(w, fmt.Errorf("invalid past guess %q: %w", req.Turns[0].Guess, err).Error(), http.StatusBadRequest)
+			return
+		}
+		if err := firstGuess.Validate(); err != nil {
+			http.Error(w, fmt.Errorf("invalid past guess %q: %w", req.Turns[0].Guess, err).Error(), http.StatusBadRequest)
+			return
+		}
+		firstFeedback, err := wordlegameengine.ParseFeedback(req.Turns[0].Feedback)
+		if err != nil {
+			http.Error(w, fmt.Errorf("invalid feedback %q: %w", req.Turns[0].Feedback, err).Error(), http.StatusBadRequest)
+			return
+		}
+		cacheKey = wordlegameengine.MakeCacheKey(firstGuess, firstFeedback)
+		cachedShortlist, cached = wordlegameengine.FirstTurnCache.Get(cacheKey)
+	}
+
+	// Create game based on cache status
+	var game *wordlegameengine.Game
+
+	if haveFirstTurn && cached {
+		// Cache hit: Create game with cached shortlist
+		game = wordlegameengine.NewGameWithShortlist(sol, cachedShortlist)
+	} else {
+		// Cache miss or no turns: Create game normally
+		game = wordlegameengine.NewGame(sol)
+	}
+
+	// Replay turns (skip first turn if cache hit)
+	startIdx := 0
+	if haveFirstTurn && cached {
+		startIdx = 1 // Skip first turn - already in cached shortlist
+	}
+
+	for i := startIdx; i < len(req.Turns); i++ {
+		turn := req.Turns[i]
 		guess, err := wordlegameengine.NewWord(turn.Guess)
 		if err != nil {
 			http.Error(w, fmt.Errorf("invalid past guess %q: %w", turn.Guess, err).Error(), http.StatusBadRequest)
@@ -87,6 +128,13 @@ func evaluateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		game.ReplayTurn(guess, feedback)
+	}
+
+	// Cache on first-turn miss
+	if haveFirstTurn && !cached && len(req.Turns) == 1 {
+		shortlistCopy := make([]wordlegameengine.Word, len(game.SolutionShortlist))
+		copy(shortlistCopy, game.SolutionShortlist)
+		wordlegameengine.FirstTurnCache.Put(cacheKey, shortlistCopy)
 	}
 
 	// Get shortlist length BEFORE playing proposed guess
@@ -132,6 +180,10 @@ func main() {
 	if err := wordlegameengine.LoadWordlists("./data"); err != nil {
 		log.Fatal(err)
 	}
+
+	// Initialize the B-tree cache
+	wordlegameengine.InitCache()
+
 	http.HandleFunc("/api/evaluate", evaluateHandler)
 	http.ListenAndServe(":9111", nil)
 }
